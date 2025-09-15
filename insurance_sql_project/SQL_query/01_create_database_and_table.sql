@@ -88,6 +88,6 @@ COPY insurance_claims(
     fraud_reported,
     raw_extra_col
 )
-FROM 'D:/SQL_portfolio_project/insurance_sql_project/dataset/insurance_claims.csv'
+FROM 'D:/sql-projects/insurance_sql_project/dataset/insurance_claims.csv'
 DELIMITER ','
 CSV HEADER;
