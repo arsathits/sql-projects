@@ -103,6 +103,64 @@ UPDATE insurance_claims
 SET auto_year = NULL
 WHERE auto_year < 1900 OR auto_year > EXTRACT(YEAR FROM CURRENT_DATE) + 2;
 
+-- Step 5: Business Logic Validations
+-- =============================================
+
+-- Add validation flags for business rules
+
+ALTER TABLE insurance_claims ADD COLUMN validation_flag VARCHAR(100);
+
+UPDATE insurance_claims
+SET validation_flag = COALESCE(validation_flag || '; ', '') || 'INCIDENT_BEFORE_POLICY'
+WHERE incident_date < policy_bind_date;
+
+-- Flag records where claim components don't add up to total
+UPDATE insurance_claims
+SET validation_flag = COALESCE(validation_flag || '; ', '') || 'CLAIM_AMOUNT_MISMATCH'
+WHERE ABS(total_claim_amount - COALESCE(injury_claim,0) - COALESCE(property_claim,0) - COALESCE(vehicle_claim,0)) > 0.01;
+
+-- Flag records with zero claim amounts
+UPDATE insurance_claims
+SET validation_flag = COALESCE(validation_flag || '; ', '') || 'ZERO_CLAIM_AMOUNT'
+WHERE total_claim_amount = 0 OR total_claim_amount is NULL;
+
+-- Step 6: Handle Date Inconsistencies
+-- =============================================
+
+-- Check for future dates
+SELECT COUNT(*) AS future_incidents
+FROM insurance_claims
+WHERE incident_date > CURRENT_DATE;
+
+-- Flag future incident dates
+UPDATE insurance_claims
+SET validation_flag = COALESCE(validation_flag || '; ', '') || 'FUTURE_INCIDENT_DATE'
+WHERE incident_date > CURRENT_DATE;
+
+-- Step 7: Clean and Standardize ZIP codes
+-- =============================================
+
+-- Remove non-numeric characters from ZIP codes and standardize length
+UPDATE insurance_claims 
+SET insured_zip = CASE 
+    WHEN LENGTH(REGEXP_REPLACE(insured_zip, '^0-9', '', 'g')) >= 5
+	THEN LEFT(REGEXP_REPLACE(insured_zip, '^0-9', '', 'g'),5)
+	ELSE NULL
+END;
+
+-- Step 8: Remove Unnecessary Columns
+-- =============================================
+
+-- Drop the raw_extra_col if it's always null (check first)
+SELECT COUNT(*) AS non_null_count
+FROM insurance_claims 
+WHERE raw_extra_col IS NOT NULL AND TRIM(raw_extra_col) != '';
+
+ALTER TABLE insurance_claims DROP COLUMN raw_extra_col;
+
+
+
+
 
 
 
