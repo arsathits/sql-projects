@@ -158,6 +158,101 @@ WHERE raw_extra_col IS NOT NULL AND TRIM(raw_extra_col) != '';
 
 ALTER TABLE insurance_claims DROP COLUMN raw_extra_col;
 
+-- Step 9: Create Data Quality Summary
+-- =============================================
+
+-- Create a summary table of data quality issues
+
+CREATE TEMP TABLE data_quality_summary AS
+SELECT
+	'Total Records' AS metrics,
+	COUNT(*)::TEXT AS value
+FROM insurance_claims
+
+UNION ALL
+
+SELECT
+	'Records with Validation Issues' AS metrics,
+	COUNT(*)::TEXT AS value
+FROM insurance_claims
+WHERE validation_flag IS NOT NULL
+
+UNION ALL
+
+SELECT
+	'Records with Missing Policy Number' AS metrics,
+	COUNT(*)::TEXT AS value
+FROM insurance_claims
+WHERE policy_number IS NULL
+
+UNION ALL
+
+SELECT
+	'Records with Missing Incident Date' AS metrics,
+	COUNT(*)::TEXT AS value
+FROM insurance_claims
+WHERE incident_date IS NULL
+
+UNION ALL
+
+SELECT
+	'Records with Missing Claim Amount' AS metrics,
+	COUNT(*)::TEXT AS value
+FROM insurance_claims
+WHERE total_claim_amount IS NULL OR total_claim_amount= 0;
+
+-- Display the summary
+SELECT * FROM data_quality_summary;
+
+-- Step 10: Final Data Validation Queries
+-- =============================================
+
+-- Check distinct values for categorical columns
+SELECT 'policy_state' AS column_name, policy_state AS value, COUNT(*) AS count
+FROM insurance_claims
+GROUP BY policy_state
+UNION ALL
+SELECT 'insured_sex' AS column_name, insured_sex AS value, COUNT(*) AS count
+FROM insurance_claims
+GROUP BY insured_sex
+UNION ALL
+SELECT 'incident_severity' AS column_name, incident_severity AS value, COUNT(*) AS count
+FROM insurance_claims
+GROUP BY incident_severity
+ORDER BY column_name, COUNT DESC;
+
+-- Final statistics
+SELECT 
+	'Cleaned Data Summary' AS summary,
+	COUNT(*) AS total_records,
+	COUNT(CASE WHEN fraud_reported='Y' THEN 1 END) AS fraud_cases,
+	ROUND(AVG(age),2) AS avg_age,
+	ROUND(AVG(total_claim_amount),2) AS avg_claim_amount,
+	COUNT(DISTINCT policy_state) AS unique_states,
+	COUNT(CASE WHEN validation_flag IS NOT NULL THEN 1 END) AS flagged_records
+FROM insurance_claims;
+
+-- Step 11: Create Clean Dataset View (Optional)
+-- =============================================
+
+-- Create a view with only clean, valid records for analysis
+CREATE OR REPLACE VIEW clean_insurance_claims AS
+SELECT *
+FROM insurance_claims 
+WHERE 
+    policy_number IS NOT NULL
+    AND incident_date IS NOT NULL 
+    AND total_claim_amount > 0
+    AND age BETWEEN 16 AND 100
+    AND incident_date >= policy_bind_date
+    AND incident_date <= CURRENT_DATE
+    AND validation_flag IS NULL;
+
+-- Check the clean dataset
+SELECT 
+	COUNT(*) AS clean_records,
+	(COUNT(*) * 100.0/ (SELECT COUNT(*) FROM insurance_claims))::NUMERIC(5,2) AS percentage_clean
+FROM clean_insurance_claims
 
 
 
