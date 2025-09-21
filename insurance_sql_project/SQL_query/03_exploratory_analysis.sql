@@ -38,27 +38,106 @@ GROUP BY fraud_status;
 -- =============================================
 
 -- Find policy states with the highest average claim amount
+
+SELECT 
+	policy_state,
+	COUNT(*) AS total_claims,
+	ROUND(AVG(total_claim_amount),2) AS avg_claim_amount
+FROM insurance_claims
+GROUP BY policy_state
+ORDER BY avg_claim_amount desc;
+
 -- Analyze claim amounts by customer age bands (<25, 25–40, 40–60, 60+)
+
+SELECT 
+	CASE 
+		WHEN age < 25 THEN 'Under 25'
+		WHEN age BETWEEN 25 AND 40 THEN '25 to 40'
+		WHEN age BETWEEN 40 AND 60 THEN '40 to 60'
+		ELSE '60 and over'
+	END AS age_group,
+	COUNT(*) AS total_claims,
+    ROUND(AVG(total_claim_amount),2) AS avg_claim_amount
+FROM insurance_claims
+GROUP BY age_group
+ORDER BY avg_claim_amount DESC;
+	 
 -- Check relationship between policy deductible and average claim amount
 
+SELECT 
+	policy_deductable,
+	COUNT(*) AS total_claims,
+	ROUND(AVG(total_claim_amount),2) AS avg_claim_amount	
+FROM insurance_claims
+GROUP BY policy_deductable
+ORDER BY policy_deductable;
 
 -- =============================================
 -- Incident Insights
 -- =============================================
 
 -- Count most common incident types
+
+SELECT 
+	COALESCE(incident_type,'UNKNOWN') AS incident_type, 
+	COUNT(*) AS incident_count
+FROM insurance_claims
+GROUP BY incident_type
+ORDER BY incident_count DESC;
+
 -- Find collision types with the highest average claim amounts
+
+SELECT 
+	COALESCE(collision_type,'UNKNOWN') AS collision_type,
+	COUNT(*) AS total_claims,
+	ROUND(AVG(total_claim_amount),2) avg_claim_amount
+FROM insurance_claims
+WHERE collision_type IS NOT NULL
+GROUP BY collision_type
+ORDER BY avg_claim_amount DESC;
+
 -- Analyze claims by time of day (incident_hour_of_the_day)
 
+SELECT 
+	incident_hour_of_the_day,
+	COUNT(*) AS frequency
+FROM insurance_claims
+GROUP BY incident_hour_of_the_day
+ORDER BY incident_hour_of_the_day;
 
 -- =============================================
 -- Geographic & Vehicle Trends
 -- =============================================
 
 -- Identify top cities and states by number of claims
+
+SELECT
+	incident_state,
+	incident_city,
+	COUNT(*) AS total_claims
+FROM insurance_claims
+GROUP BY incident_state,incident_city
+ORDER BY total_claims DESC;
+
 -- Find most common auto makes and models in claims
+
+SELECT 
+	auto_make, 
+	auto_model,
+	COUNT(*) AS total_claims
+FROM insurance_claims
+GROUP BY auto_make, auto_model
+ORDER BY total_claims DESC;
+
 -- Check whether vehicle year impacts average claim amount
 
+SELECT
+	auto_year,
+	COUNT(*) AS total_claims,
+	ROUND(AVG(total_claim_amount),2) AS avg_claim_amount
+FROM insurance_claims
+GROUP BY auto_year
+ORDER BY auto_year;
 
 -- =============================================
 -- KPI Definitions
