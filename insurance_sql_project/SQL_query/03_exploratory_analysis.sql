@@ -1,7 +1,3 @@
-SELECT COLUMN_NAME
-FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = 'insurance_claims';
-
 -- =============================================
 -- Fraud Analysis
 -- =============================================
@@ -143,18 +139,76 @@ ORDER BY auto_year;
 -- KPI Definitions
 -- =============================================
 
--- Total number of claims
--- Total claim payout amount (sum of all claims)
--- Average claim amount across all records
--- Fraud rate percentage
--- Top 5 states by claim volume
--- Top 5 occupations with highest fraud claims
+-- Baseline KPIs: Total claims, total payouts, avg claim amount, fraud rate
 
+SELECT
+    COUNT(*) AS total_claims,
+    SUM(total_claim_amount) AS total_payout_amount,
+    ROUND(AVG(total_claim_amount),2) AS avg_claim_amount,
+    ROUND((COUNT(CASE WHEN fraud_reported='Y' THEN 1 END) * 100.0 / COUNT(*)), 2) AS fraud_rate_pct
+FROM insurance_claims;
+
+-- Total claim payout amount (sum of all claims)
+
+SELECT SUM(total_claim_amount) AS total_claim_payout
+FROM insurance_claims
+
+-- Top 5 states by claim volume
+
+SELECT
+	incident_state,
+	COUNT(*) AS total_claims
+FROM insurance_claims
+GROUP BY incident_state
+ORDER BY total_claims DESC
+LIMIT 5;
+
+-- Top 5 occupations with the highest fraud claims
+
+SELECT
+	insured_occupation,
+	COUNT(*) AS fraud_claims
+FROM insurance_claims
+WHERE fraud_reported = 'Y'
+GROUP BY insured_occupation
+ORDER BY fraud_claims DESC
+LIMIT 5;
 
 -- =============================================
 -- Trend Analysis
 -- =============================================
 
 -- Claims trend year by year
+
+SELECT
+	EXTRACT(MONTH FROM incident_date) AS incident_month,
+	COUNT(*) AS total_claims
+FROM insurance_claims
+GROUP BY incident_month
+ORDER BY incident_month;
+
 -- Fraud trend over time
+
+-- Fraud trend by month
+
+SELECT
+    EXTRACT(MONTH FROM incident_date) AS claim_month,
+    COUNT(*) AS total_claims,
+    COUNT(CASE WHEN fraud_reported = 'Y' THEN 1 END) AS fraud_claims,
+    ROUND(
+        (COUNT(CASE WHEN fraud_reported = 'Y' THEN 1 END) * 100.0 / COUNT(*)), 
+        2
+    ) AS fraud_rate_pct
+FROM insurance_claims
+WHERE incident_date IS NOT NULL
+GROUP BY claim_month
+ORDER BY claim_month;
+
 -- Average claim amount trend per year
+
+SELECT 
+	EXTRACT(MONTH FROM incident_date) AS claim_month,
+	ROUND(AVG(total_claim_amount),2) AS avg_claim
+FROM insurance_claims
+GROUP BY claim_month
+ORDER BY claim_month;
