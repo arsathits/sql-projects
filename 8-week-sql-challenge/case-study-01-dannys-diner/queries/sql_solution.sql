@@ -23,6 +23,19 @@ from sales
 group by customer_id;
 
 -- 3. What was the first item from the menu purchased by each customer?
+
+WITH cte AS (
+    SELECT 
+        customer_id,
+        product_id,
+        ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY order_date) AS rn
+    FROM sales
+)
+SELECT c.customer_id, m.product_name
+FROM cte c
+JOIN menu m ON m.product_id = c.product_id
+WHERE c.rn = 1;
+
 -- 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
 -- 5. Which item was the most popular for each customer?
 -- 6. Which item was purchased first by the customer after they became a member?
