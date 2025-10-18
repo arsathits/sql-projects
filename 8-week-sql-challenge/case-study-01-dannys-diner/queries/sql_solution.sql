@@ -37,6 +37,16 @@ JOIN menu m ON m.product_id = c.product_id
 WHERE c.rn = 1;
 
 -- 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
+
+SELECT 
+  m.product_name AS most_ordered_item,
+  COUNT(*) AS no_of_items_ordered
+FROM sales s
+JOIN menu m ON s.product_id = m.product_id
+GROUP BY m.product_name
+ORDER BY no_of_items_ordered DESC
+LIMIT 1;
+
 -- 5. Which item was the most popular for each customer?
 -- 6. Which item was purchased first by the customer after they became a member?
 -- 7. Which item was purchased just before the customer became a member?
