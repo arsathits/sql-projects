@@ -48,6 +48,16 @@ ORDER BY no_of_items_ordered DESC
 LIMIT 1;
 
 -- 5. Which item was the most popular for each customer?
+
+SELECT DISTINCT ON (s.customer_id)
+    s.customer_id,
+    m.product_name
+FROM sales s
+JOIN menu m ON s.product_id = m.product_id
+GROUP BY s.product_id, s.customer_id, m.product_name
+ORDER BY s.customer_id, COUNT(*) DESC;
+
+
 -- 6. Which item was purchased first by the customer after they became a member?
 -- 7. Which item was purchased just before the customer became a member?
 -- 8. What is the total items and amount spent for each member before they became a member?
