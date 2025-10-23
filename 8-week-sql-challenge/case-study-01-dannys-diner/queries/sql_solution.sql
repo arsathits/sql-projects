@@ -76,6 +76,17 @@ from cte
 where rn = 1;
 
 -- 7. Which item was purchased just before the customer became a member?
+
+SELECT s.*
+FROM sales s
+JOIN members m ON s.customer_id = m.customer_id
+WHERE s.order_date = (
+    SELECT MAX(order_date)
+    FROM sales
+    WHERE customer_id = s.customer_id
+      AND order_date < m.join_date
+);
+
 -- 8. What is the total items and amount spent for each member before they became a member?
 -- 9.  If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
 -- 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
